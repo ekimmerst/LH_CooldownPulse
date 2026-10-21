@@ -50,3 +50,7 @@ Original author: Woffle of Dark Iron[US]. Adapted from Doom_CooldownPulse for Wo
 - Renamed Doom_CooldownPulse to LH_CooldownPulse, including the folder, Lua/TOC files, metadata, options title, global option-frame names and saved-variable tables.
 - Replaced the previous commands with `/lh_cooldownpulse`.
 - Translated and repaired the English documentation, including migration instructions for account and character settings.
+
+## Required core addon
+
+Install and enable **LH_Tweaks** alongside this addon. LH_Tweaks is the shared LiteHawk configuration host and must load first. CurseForge releases must list LH_Tweaks as a required dependency so the client installs it automatically.
