@@ -12,7 +12,7 @@ local defaultSettings = {
     iconSize = 75,
     holdTime = 0,
     petOverlay = {1,1,1},
-    showSpellName = nil,
+    showSpellName = false,
     x = UIParent:GetWidth()*UIParent:GetEffectiveScale()/2,
     y = UIParent:GetHeight()*UIParent:GetEffectiveScale()/2,
     remainingCooldownWhenNotified = 0
@@ -26,6 +26,7 @@ local defaultSettingsPerCharacter = {
 local DCP = CreateFrame("frame")
 DCP:SetScript("OnEvent", function(self, event, ...) self[event](self, ...) end)
 DCP:SetMovable(true)
+DCP:EnableMouse(false)
 DCP:RegisterForDrag("LeftButton")
 DCP:SetScript("OnDragStart", function(self) self:StartMoving() end)
 DCP:SetScript("OnDragStop", function(self)
@@ -116,7 +117,7 @@ end
 local function MergeTable(destination, source)
     for i, v in pairs(source) do
         if (destination[i] == nil) then
-            destination[i] = v
+            destination[i] = type(v) == "table" and {unpack(v)} or v
         end
     end
 end
@@ -133,6 +134,61 @@ local function InitializeSavedVariables()
     MergeTable(LH_CooldownPulse_Saved, defaultSettings)
     MergeTable(LH_CooldownPulse_SavedPerCharacter, defaultSettingsPerCharacter)
 end
+
+-- Shared setting definitions retain the original dialog's ranges and defaults.
+DCP.options = {
+    { key = "iconSize", label = "Icon size", min = 30, max = 125, step = 5, tooltip = "Base icon size in UI units." },
+    { key = "fadeInTime", label = "Fade-in time", min = 0, max = 1.5, step = 0.1, tooltip = "Seconds spent fading in." },
+    { key = "fadeOutTime", label = "Fade-out time", min = 0, max = 1.5, step = 0.1, tooltip = "Seconds spent fading out." },
+    { key = "maxAlpha", label = "Maximum opacity", min = 0, max = 1, step = 0.1, tooltip = "Peak opacity, from invisible to fully opaque." },
+    { key = "holdTime", label = "Hold time", min = 0, max = 1.5, step = 0.1, tooltip = "Seconds to hold the maximum opacity." },
+    { key = "animScale", label = "Animation scaling", min = 0, max = 2, step = 0.1, tooltip = "Final icon size relative to its base size." },
+    { key = "remainingCooldownWhenNotified", label = "Advance notification", min = 0, max = 3, step = 0.1, tooltip = "Notify this many seconds before the cooldown ends. Zero notifies when ready." },
+}
+
+function DCP:GetOption(key)
+    local perCharacter = defaultSettingsPerCharacter[key] ~= nil
+    local saved = perCharacter and LH_CooldownPulse_SavedPerCharacter or LH_CooldownPulse_Saved
+    if saved and saved[key] ~= nil then return saved[key] end
+    if perCharacter then return defaultSettingsPerCharacter[key] end
+    return defaultSettings[key]
+end
+
+function DCP:GetDefault(key)
+    if defaultSettingsPerCharacter[key] ~= nil then return defaultSettingsPerCharacter[key] end
+    return defaultSettings[key]
+end
+
+function DCP:SetOption(key, value)
+    InitializeSavedVariables()
+    if key == "showSpellName" or key == "invertIgnored" then value = value == true
+    elseif key == "ignoredSpells" then
+        if type(value) ~= "string" then return end
+    elseif key == "petOverlay" then
+        if type(value) ~= "table" then return end
+        local color = {}
+        for i = 1, 3 do
+            if not PlainNumber(value[i]) then return end
+            color[i] = math.max(0, math.min(1, value[i]))
+        end
+        value = color
+    else
+        local option
+        for _, candidate in ipairs(self.options) do if candidate.key == key then option = candidate; break end end
+        if not option or not PlainNumber(value) then return end
+        value = math.max(option.min, math.min(option.max, value))
+    end
+    local saved = defaultSettingsPerCharacter[key] ~= nil and LH_CooldownPulse_SavedPerCharacter or LH_CooldownPulse_Saved
+    saved[key] = value
+    RefreshLocals()
+    if self:IsMouseEnabled() then
+        self:SetSize(iconSize, iconSize)
+        DCPT:SetVertexColor(1, 1, 1)
+    end
+    if self.RefreshSettings then self:RefreshSettings() end
+end
+
+LH_CooldownPulse = DCP
 
 local function IsAnimatingCooldownByName(name)
     for i, details in pairs(animating) do
@@ -304,10 +360,12 @@ function DCP:PLAYER_ENTERING_WORLD()
     wipe(animating)
     runtimer = 0
     DCPT:SetTexture(nil)
+    DCPT:SetVertexColor(1, 1, 1)
     self.TextFrame:SetText(nil)
     self:SetAlpha(0)
     ScanItems()
     ScanPet()
+    if self:IsMouseEnabled() then self:SetUnlocked(true) end
 end
 
 function DCP:PLAYER_SPECIALIZATION_CHANGED(unit)
@@ -323,221 +381,47 @@ for _, event in ipairs({"UNIT_SPELLCAST_SUCCEEDED", "SPELL_UPDATE_COOLDOWN",
     end
 end
 
--------------------
--- Options Frame --
--------------------
-
-SlashCmdList["LH_COOLDOWNPULSE"] = function() if (not LH_CooldownPulse_OptionsFrame) then DCP:CreateOptionsFrame() end LH_CooldownPulse_OptionsFrame:Show() end
-SLASH_LH_COOLDOWNPULSE1 = "/lh_cooldownpulse"
-
-function DCP:CreateOptionsFrame()
-    local sliders = {
-        { text = "Icon Size", value = "iconSize", min = 30, max = 125, step = 5 },
-        { text = "Fade In Time", value = "fadeInTime", min = 0, max = 1.5, step = 0.1 },
-        { text = "Fade Out Time", value = "fadeOutTime", min = 0, max = 1.5, step = 0.1 },
-        { text = "Max Opacity", value = "maxAlpha", min = 0, max = 1, step = 0.1 },
-        { text = "Max Opacity Hold Time", value = "holdTime", min = 0, max = 1.5, step = 0.1 },
-        { text = "Animation Scaling", value = "animScale", min = 0, max = 2, step = 0.1 },
-        { text = "Show Before Available Time", value = "remainingCooldownWhenNotified", min = 0, max = 3, step = 0.1 },
-    }
-
-    local buttons = {
-        { text = "Close", func = function(self) self:GetParent():Hide() end },
-        { text = "Test", func = function(self)
-            LH_CooldownPulse_OptionsFrameButton3:SetText("Unlock")
-            DCP:EnableMouse(false)
-            RefreshLocals()
-            tinsert(animating,{"Interface\\Icons\\Spell_Nature_Earthbind",nil,"Spell Name"})
-            DCP:SetScript("OnUpdate", OnUpdate)
-            end },
-        { text = "Unlock", func = function(self)
-            if (self:GetText() == "Unlock") then
-                RefreshLocals()
-                DCP:SetWidth(iconSize)
-                DCP:SetHeight(iconSize)
-                self:SetText("Lock")
-                DCP:SetScript("OnUpdate", nil)
-                DCP:SetAlpha(1)
-                DCPT:SetTexture("Interface\\Icons\\Spell_Nature_Earthbind")
-                DCP:EnableMouse(true)
-            else
-                DCP:SetAlpha(0)
-                self:SetText("Unlock")
-                DCP:EnableMouse(false)
-                DCP:SetScript("OnUpdate", OnUpdate)
-            end end },
-        { text = "Defaults", func = function(self)
-            for i,v in pairs(defaultSettings) do
-                LH_CooldownPulse_Saved[i] = v
-            end
-            for i,v in pairs(defaultSettingsPerCharacter) do
-                LH_CooldownPulse_SavedPerCharacter[i] = v
-            end
-            for i,v in pairs(sliders) do
-                getglobal("LH_CooldownPulse_OptionsFrameSlider"..i).Slider:SetValue(LH_CooldownPulse_Saved[v.value])
-            end
-            LH_CooldownPulse_OptionsFramePetColorBox:GetNormalTexture():SetVertexColor(unpack(LH_CooldownPulse_Saved.petOverlay))
-            LH_CooldownPulse_OptionsFrameIgnoreTypeButtonWhitelist:SetChecked(false)
-            LH_CooldownPulse_OptionsFrameIgnoreTypeButtonBlacklist:SetChecked(true)
-            LH_CooldownPulse_OptionsFrameIgnoreBox:SetText("")
-            DCP:ClearAllPoints()
-            DCP:SetPoint("CENTER",UIParent,"BOTTOMLEFT",LH_CooldownPulse_Saved.x,LH_CooldownPulse_Saved.y)
-            end },
-    }
-
-    local optionsframe = CreateFrame("frame","LH_CooldownPulse_OptionsFrame",UIParent,BackdropTemplateMixin and "BackdropTemplate")
-    optionsframe:SetBackdrop({
-      bgFile="Interface\\DialogFrame\\UI-DialogBox-Background",
-      edgeFile="Interface\\DialogFrame\\UI-DialogBox-Border",
-      tile=1, tileSize=32, edgeSize=32,
-      insets={left=11, right=12, top=12, bottom=11}
-    })
-    optionsframe:SetWidth(230)
-    optionsframe:SetHeight(610)
-    optionsframe:SetPoint("CENTER",UIParent)
-    optionsframe:EnableMouse(true)
-    optionsframe:SetMovable(true)
-    optionsframe:RegisterForDrag("LeftButton")
-    optionsframe:SetScript("OnDragStart", function(self) self:StartMoving() end)
-    optionsframe:SetScript("OnDragStop", function(self) self:StopMovingOrSizing() end)
-    optionsframe:SetFrameStrata("FULLSCREEN_DIALOG")
-    optionsframe:SetScript("OnHide", function() RefreshLocals() end)
-    tinsert(UISpecialFrames, "LH_CooldownPulse_OptionsFrame")
-
-    local header = optionsframe:CreateTexture(nil,"ARTWORK")
-    header:SetTexture("Interface\\DialogFrame\\UI-DialogBox-Header.blp")
-    header:SetWidth(350)
-    header:SetHeight(68)
-    header:SetPoint("TOP",optionsframe,"TOP",0,12)
-
-    local headertext = optionsframe:CreateFontString(nil,"ARTWORK","GameFontNormal")
-    headertext:SetPoint("TOP",header,"TOP",0,-14)
-    headertext:SetText("LH_CooldownPulse")
-
-    for i,v in pairs(sliders) do
-        local options = Settings.CreateSliderOptions(v.min, v.max, v.step)
-        options:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Top, function() return v.text end)
-        options:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Max, function() return v.max end);
-        options:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Min, function() return v.min end);
-        options:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right, function(value) return format("%.1f", value) end);
-
-        local slider = CreateFrame("Frame", "LH_CooldownPulse_OptionsFrameSlider"..i, optionsframe, "MinimalSliderWithSteppersTemplate")
-        slider:SetScale(0.9)
-        slider:SetSize(220, 40)
-        slider:Init(LH_CooldownPulse_Saved[v.value], options.minValue, options.maxValue, options.steps, options.formatters)
-        if (i == 1) then
-            slider:SetPoint("TOP",optionsframe,"TOP",0,-40)
-        else
-            slider:SetPoint("TOP",getglobal("LH_CooldownPulse_OptionsFrameSlider"..(i-1)),"BOTTOM",0,-20)
-        end
-        slider:RegisterCallback("OnValueChanged", function(self, value)
-            LH_CooldownPulse_Saved[v.value] = value
-            RefreshLocals()
-            if (DCP:IsMouseEnabled()) then
-                DCP:SetWidth(LH_CooldownPulse_Saved.iconSize)
-                DCP:SetHeight(LH_CooldownPulse_Saved.iconSize)
-            end
-        end)
-
-        slider.RightText:ClearAllPoints()
-        slider.RightText:SetPoint("TOP",slider.Slider,"CENTER",0,-15)
+function DCP:SetUnlocked(unlocked)
+    InitializeSavedVariables()
+    RefreshLocals()
+    self:StopMovingOrSizing()
+    wipe(animating)
+    runtimer = 0
+    self.TextFrame:SetText(nil)
+    DCPT:SetVertexColor(1, 1, 1)
+    self:EnableMouse(unlocked == true)
+    if unlocked then
+        self:SetSize(iconSize, iconSize)
+        self:SetAlpha(1)
+        DCPT:SetTexture("Interface\\Icons\\Spell_Nature_Earthbind")
+        self:SetScript("OnUpdate", nil)
+    else
+        self:SetAlpha(0)
+        DCPT:SetTexture(nil)
+        self:SetScript("OnUpdate", OnUpdate)
     end
+    if self.RefreshSettings then self:RefreshSettings() end
+end
 
-    local pettext = optionsframe:CreateFontString(nil,"ARTWORK","GameFontNormalSmall")
-    pettext:SetPoint("TOPLEFT","LH_CooldownPulse_OptionsFrameSlider"..#sliders,"BOTTOMLEFT",13,-20)
-    pettext:SetText("Pet color overlay:")
+function DCP:Test()
+    self:SetUnlocked(false)
+    tinsert(animating, {"Interface\\Icons\\Spell_Nature_Earthbind", nil, "Spell Name"})
+    self:SetScript("OnUpdate", OnUpdate)
+end
 
-    local petcolorselect = CreateFrame('Button',"LH_CooldownPulse_OptionsFramePetColorBox",optionsframe)
-    petcolorselect:SetPoint("LEFT",pettext,"RIGHT",10,0)
-    petcolorselect:SetWidth(20)
-    petcolorselect:SetHeight(20)
-    petcolorselect:SetNormalTexture('Interface/ChatFrame/ChatFrameColorSwatch')
-    petcolorselect:GetNormalTexture():SetVertexColor(unpack(LH_CooldownPulse_Saved.petOverlay))
-    petcolorselect:SetScript("OnEnter",function(self) GameTooltip:SetOwner(self, "ANCHOR_CURSOR") GameTooltip:SetText("Note: Use white if you don't want any overlay for pet cooldowns") end)
-    petcolorselect:SetScript("OnLeave",function(self) GameTooltip:Hide() end)
-    petcolorselect:SetScript('OnClick', function(self)
-        local r, g, b = unpack(LH_CooldownPulse_Saved.petOverlay)
-        ColorPickerFrame:SetupColorPickerAndShow({
-            swatchFunc = function(self) LH_CooldownPulse_Saved.petOverlay={ColorPickerFrame:GetColorRGB()} petcolorselect:GetNormalTexture():SetVertexColor(ColorPickerFrame:GetColorRGB()) end,
-            cancelFunc = function(self) LH_CooldownPulse_Saved.petOverlay={r,g,b} petcolorselect:GetNormalTexture():SetVertexColor(unpack(LH_CooldownPulse_Saved.petOverlay)) end,
-            hasOpacity = false,
-            r = r,
-            g = g,
-            b = b
-        })
-        ColorPickerFrame:SetPoint("TOPLEFT",optionsframe,"TOPRIGHT")
-    end)
+function DCP:ResetPosition()
+    self:StopMovingOrSizing()
+    LH_CooldownPulse_Saved.x, LH_CooldownPulse_Saved.y = defaultSettings.x, defaultSettings.y
+    self:ClearAllPoints()
+    self:SetPoint("CENTER", UIParent, "BOTTOMLEFT", LH_CooldownPulse_Saved.x, LH_CooldownPulse_Saved.y)
+end
 
-    local petcolorselectbg = petcolorselect:CreateTexture(nil, 'BACKGROUND')
-    petcolorselectbg:SetWidth(17)
-    petcolorselectbg:SetHeight(17)
-    petcolorselectbg:SetColorTexture(1,1,1)
-    petcolorselectbg:SetPoint('CENTER')
-
-    local spellnametext = optionsframe:CreateFontString(nil,"ARTWORK","GameFontNormalSmall")
-    spellnametext:SetPoint("TOPLEFT",pettext,"BOTTOMLEFT",0,-18)
-    spellnametext:SetText("Show spell name:")
-
-    local spellnamecbt = CreateFrame("CheckButton","LH_CooldownPulse_OptionsFrameSpellNameCheckButton",optionsframe,"UICheckButtonTemplate")
-    spellnamecbt:SetPoint("LEFT",spellnametext,"RIGHT",6,0)
-    spellnamecbt:SetChecked(LH_CooldownPulse_Saved.showSpellName)
-    spellnamecbt:SetScript("OnClick", function(self)
-        local newState = self:GetChecked()
-        self:SetChecked(newState)
-        LH_CooldownPulse_Saved.showSpellName = newState
-        RefreshLocals()
-    end)
-
-    local ignoretext = optionsframe:CreateFontString(nil,"ARTWORK","GameFontNormalSmall")
-    ignoretext:SetPoint("TOPLEFT",spellnametext,"BOTTOMLEFT",0,-18)
-    ignoretext:SetText("Filter spells:")
-
-    local ignoretypebuttonblacklist = CreateFrame("Checkbutton","LH_CooldownPulse_OptionsFrameIgnoreTypeButtonBlacklist",optionsframe,"UIRadioButtonTemplate")
-    ignoretypebuttonblacklist:SetPoint("TOPLEFT",ignoretext,"BOTTOMLEFT",0,-4)
-    ignoretypebuttonblacklist:SetChecked(not LH_CooldownPulse_SavedPerCharacter.invertIgnored)
-    ignoretypebuttonblacklist:SetScript("OnClick", function()
-        LH_CooldownPulse_OptionsFrameIgnoreTypeButtonWhitelist:SetChecked(false)
-        LH_CooldownPulse_SavedPerCharacter.invertIgnored = false
-        RefreshLocals()
-    end)
-
-    local ignoretypetextblacklist = optionsframe:CreateFontString(nil,"ARTWORK","GameFontNormalSmall")
-    ignoretypetextblacklist:SetPoint("LEFT",ignoretypebuttonblacklist,"RIGHT",4,0)
-    ignoretypetextblacklist:SetText("Blacklist")
-
-    local ignoretypebuttonwhitelist = CreateFrame("Checkbutton","LH_CooldownPulse_OptionsFrameIgnoreTypeButtonWhitelist",optionsframe,"UIRadioButtonTemplate")
-    ignoretypebuttonwhitelist:SetPoint("LEFT",ignoretypetextblacklist,"RIGHT",10,0)
-    ignoretypebuttonwhitelist:SetChecked(LH_CooldownPulse_SavedPerCharacter.invertIgnored)
-    ignoretypebuttonwhitelist:SetScript("OnClick", function()
-        LH_CooldownPulse_OptionsFrameIgnoreTypeButtonBlacklist:SetChecked(false)
-        LH_CooldownPulse_SavedPerCharacter.invertIgnored = true
-        RefreshLocals()
-    end)
-
-    local ignoretypetextwhitelist = optionsframe:CreateFontString(nil,"ARTWORK","GameFontNormalSmall")
-    ignoretypetextwhitelist:SetPoint("LEFT",ignoretypebuttonwhitelist,"RIGHT",4,0)
-    ignoretypetextwhitelist:SetText("Whitelist")
-
-    local ignorebox = CreateFrame("EditBox","LH_CooldownPulse_OptionsFrameIgnoreBox",optionsframe,"InputBoxTemplate")
-    ignorebox:SetAutoFocus(false)
-    ignorebox:SetPoint("TOPLEFT",ignoretypebuttonblacklist,"BOTTOMLEFT",4,2)
-    ignorebox:SetWidth(170)
-    ignorebox:SetHeight(32)
-    ignorebox:SetText(LH_CooldownPulse_SavedPerCharacter.ignoredSpells)
-    ignorebox:SetScript("OnEnter",function(self) GameTooltip:SetOwner(self, "ANCHOR_CURSOR") GameTooltip:SetText("Note: Separate multiple spells with commas") end)
-    ignorebox:SetScript("OnLeave",function(self) GameTooltip:Hide() end)
-    ignorebox:SetScript("OnEnterPressed", function(self) self:ClearFocus() end)
-    ignorebox:SetScript("OnEditFocusLost",function(self)
-        LH_CooldownPulse_SavedPerCharacter.ignoredSpells = ignorebox:GetText()
-        RefreshLocals()
-    end)
-
-    for i,v in pairs(buttons) do
-        local button = CreateFrame("Button", "LH_CooldownPulse_OptionsFrameButton"..i, optionsframe, "UIPanelButtonTemplate")
-        button:SetHeight(24)
-        button:SetWidth(75)
-        button:SetPoint("BOTTOM", optionsframe, "BOTTOM", ((i%2==0 and -1) or 1)*45, 10 + ceil(i/2)*15 + (ceil(i/2)-1)*15)
-        button:SetText(v.text)
-        button:SetScript("OnClick", function(self) PlaySound(852) v.func(self) end)
+function DCP:RestoreDefaults()
+    InitializeSavedVariables()
+    for key, value in pairs(defaultSettings) do
+        LH_CooldownPulse_Saved[key] = type(value) == "table" and {unpack(value)} or value
     end
+    for key, value in pairs(defaultSettingsPerCharacter) do LH_CooldownPulse_SavedPerCharacter[key] = value end
+    self:ResetPosition()
+    self:SetUnlocked(false)
 end
