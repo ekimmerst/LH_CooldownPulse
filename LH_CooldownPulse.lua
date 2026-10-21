@@ -1,8 +1,9 @@
 local addonName = ...
-local fadeInTime, fadeOutTime, maxAlpha, animScale, iconSize, holdTime, showSpellName, ignoredSpells, invertIgnored, remainingCooldownWhenNotified
+local fadeInTime, fadeOutTime, maxAlpha, animScale, iconSize, holdTime, showSpellName, trackPetAbilities, ignoredSpells, invertIgnored, remainingCooldownWhenNotified
 local cooldowns, animating, watching, notified = { }, { }, { }, { }
 local itemSpells = {}
 local GetTime = GetTime
+local runtimer = 0
 
 local defaultSettings = {
     fadeInTime = 0.3,
@@ -13,6 +14,7 @@ local defaultSettings = {
     holdTime = 0,
     petOverlay = {1,1,1},
     showSpellName = false,
+    trackPetAbilities = true,
     x = UIParent:GetWidth()*UIParent:GetEffectiveScale()/2,
     y = UIParent:GetHeight()*UIParent:GetEffectiveScale()/2,
     remainingCooldownWhenNotified = 0
@@ -105,6 +107,7 @@ local function RefreshLocals()
     iconSize = LH_CooldownPulse_Saved.iconSize
     holdTime = LH_CooldownPulse_Saved.holdTime
     showSpellName = LH_CooldownPulse_Saved.showSpellName
+    trackPetAbilities = LH_CooldownPulse_Saved.trackPetAbilities
     invertIgnored = LH_CooldownPulse_SavedPerCharacter.invertIgnored
     remainingCooldownWhenNotified = LH_CooldownPulse_Saved.remainingCooldownWhenNotified
 
@@ -159,9 +162,29 @@ function DCP:GetDefault(key)
     return defaultSettings[key]
 end
 
+local function ClearPetTracking()
+    for key, entry in pairs(watching) do
+        if entry.kind == "pet" then
+            watching[key] = nil
+            notified[key] = nil
+        end
+    end
+    local activePet = animating[1] and animating[1][2]
+    for i = #animating, 1, -1 do
+        if animating[i][2] then tremove(animating, i) end
+    end
+    if activePet then
+        runtimer = 0
+        DCP.TextFrame:SetText(nil)
+        DCPT:SetTexture(nil)
+        DCPT:SetVertexColor(1, 1, 1)
+        DCP:SetAlpha(0)
+    end
+end
+
 function DCP:SetOption(key, value)
     InitializeSavedVariables()
-    if key == "showSpellName" or key == "invertIgnored" then value = value == true
+    if key == "showSpellName" or key == "invertIgnored" or key == "trackPetAbilities" then value = value == true
     elseif key == "ignoredSpells" then
         if type(value) ~= "string" then return end
     elseif key == "petOverlay" then
@@ -181,6 +204,7 @@ function DCP:SetOption(key, value)
     local saved = defaultSettingsPerCharacter[key] ~= nil and LH_CooldownPulse_SavedPerCharacter or LH_CooldownPulse_Saved
     saved[key] = value
     RefreshLocals()
+    if key == "trackPetAbilities" and not value then ClearPetTracking() end
     if self:IsMouseEnabled() then
         self:SetSize(iconSize, iconSize)
         DCPT:SetVertexColor(1, 1, 1)
@@ -204,7 +228,6 @@ end
 -- Cooldown / Animation --
 --------------------------
 local elapsed = 0
-local runtimer = 0
 local function OnUpdate(_,update)
     elapsed = elapsed + update
     if (elapsed > 0.05) then
@@ -287,6 +310,7 @@ end
 DCP:RegisterEvent("ADDON_LOADED")
 
 local function Watch(kind, id, name, texture, filterID)
+    if kind == "pet" and not trackPetAbilities then return end
     if IsSecret(id) or IsSecret(name) or IsSecret(texture) then return end
     if not id or not name or not texture or not ignoredSpells then return end
     local listed = ignoredSpells[name] or ignoredSpells[tostring(filterID or id)] or false
@@ -318,6 +342,7 @@ local function ScanItems()
 end
 
 local function ScanPet()
+    if not trackPetAbilities then return end
     for slot = 1, (NUM_PET_ACTION_SLOTS or 10) do
         local name, texture, isToken, _, _, _, spellID = GetPetActionInfo(slot)
         if not IsSecret(spellID) and spellID then

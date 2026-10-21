@@ -81,6 +81,8 @@ local function Build(category, layout)
     end
     local names = Proxy(category, "showSpellName", "boolean", "Show spell names", false)
     Settings.CreateCheckbox(category, names, "Display the spell or item name over the icon. Saved account-wide.")
+    local petAbilities = Proxy(category, "trackPetAbilities", "boolean", "Track pet abilities", true)
+    Settings.CreateCheckbox(category, petAbilities, "Notify when a pet ability is ready. Turning this off clears pending pet notifications. Saved account-wide.")
     local color = Proxy(category, "petOverlay", "string", "Pet color overlay", "ffffffff",
         function()
             local rgb = Addon:GetOption("petOverlay")

@@ -130,9 +130,10 @@ LH_Tweaks:RegisterModulePage('LH_CooldownPulse')
 local c=a.category
 assert(c.parent==LH_Tweaks.category and c.title=='LH CooldownPulse')
 assert(c.layout.rows[1].header=='Fork of Doom_CooldownPulse by discoteq.')
-assert(a:GetOption('iconSize')==95 and a:GetOption('showSpellName'))
+assert(a:GetOption('iconSize')==95 and a:GetOption('showSpellName') and a:GetOption('trackPetAbilities'))
 assert(registry.LH_CooldownPulse_petOverlay.get()=='ff336699')
-local count=0;for _ in pairs(registry) do count=count+1 end;assert(count==12)
+local count=0;for _ in pairs(registry) do count=count+1 end;assert(count==13)
+assert(registry.LH_CooldownPulse_trackPetAbilities.get()==true)
 SlashCmdList.LH_COOLDOWNPULSE();assert(opened==c:GetID())
 registry.LH_CooldownPulse_unlocked.set(true);assert(a:IsMouseEnabled() and a.width==95 and a.alpha==1)
 a:PLAYER_ENTERING_WORLD();assert(a:IsMouseEnabled() and a.alpha==1 and a.textureRegion.texture)
@@ -159,7 +160,7 @@ assert(a:GetOption('ignoredSpells')=='Spell1' and not activeRow.data)
 activeRow:Init(init);assert(box:GetText()=='Spell1')
 fire('Settings.CategoryDefaulted',{});assert(a:GetOption('iconSize')==125)
 fire('Settings.CategoryDefaulted',c)
-assert(a:GetOption('iconSize')==75 and not a:GetOption('showSpellName'))
+assert(a:GetOption('iconSize')==75 and not a:GetOption('showSpellName') and a:GetOption('trackPetAbilities'))
 assert(a:GetOption('ignoredSpells')=='' and not a:GetOption('invertIgnored') and not a:IsMouseEnabled())
 assert(box:GetText()=='' and registry.LH_CooldownPulse_petOverlay.get()=='ffffffff')
 -- Defaults must not alias a mutable color table.
@@ -186,8 +187,18 @@ tick(111);assert(not a.textureRegion.texture,'Restricted cooldown caused a late 
 GetPetActionInfo=function(slot) if slot==1 then return 'PetName','PetTexture',false end end
 GetPetActionCooldown=function() return 100,10,1 end
 a:SetOption('petOverlay',{.3,.5,.7});a:SetOption('showSpellName',true)
+clock=100;a:PLAYER_ENTERING_WORLD();tick(101)
+registry.LH_CooldownPulse_trackPetAbilities.set(false)
+assert(not a:GetOption('trackPetAbilities') and LH_CooldownPulse_Saved.trackPetAbilities==false)
+tick(111);assert(not a.textureRegion.texture,'Disabled pending pet cooldown pulsed')
+clock=100;a:PLAYER_ENTERING_WORLD();tick(101);tick(111)
+assert(not a.textureRegion.texture,'Disabled pet tracking resumed on world entry')
+registry.LH_CooldownPulse_trackPetAbilities.set(true)
 clock=100;a:PLAYER_ENTERING_WORLD();tick(101);tick(111)
 assert(a.textureRegion.texture=='PetTexture' and a.textureRegion.color[1]==.3 and a.TextFrame.text=='PetName')
+registry.LH_CooldownPulse_trackPetAbilities.set(false)
+assert(not a.textureRegion.texture and not a.TextFrame.text,'Active pet pulse was not cleared')
+registry.LH_CooldownPulse_trackPetAbilities.set(true)
 GetPetActionInfo=function() end
 GetInventoryItemID=function(_,slot) if slot==1 then return 500 end end
 C_Item={GetItemNameByID=function() return 'ItemName' end,GetItemIconByID=function() return 'ItemTexture' end}
@@ -202,4 +213,4 @@ for ext in ('png', 'tga'):
     assert (addon / f'Media/Icon.{ext}').read_bytes() == (core / f'Icon.{ext}').read_bytes()
 source = (addon / 'LH_CooldownPulse.lua').read_text()
 assert 'CreateOptionsFrame' not in source and 'OptionsFrame' not in source
-print('PASS: host registration, fork notice, all 12 settings, saved values, inline filter lifecycle, colors, preview/drag/reset, defaults, real cooldown/filter regression, restricted data, XML and identical icons')
+print('PASS: host registration, fork notice, all 13 settings, pet toggle and cancellation, saved values, inline filter lifecycle, colors, preview/drag/reset, defaults, real cooldown/filter regression, restricted data, XML and identical icons')

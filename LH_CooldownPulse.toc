@@ -5,7 +5,7 @@
 ## X-Part-Of: LH_Tweaks
 ## IconTexture: Interface\AddOns\LH_CooldownPulse\Media\Icon
 ## Notes: Flash an ability's icon in the middle of the screen when it comes off cooldown.
-## Version: 1.60.1-forever.3
+## Version: 1.60.1-forever.4
 ## Author: Woffle of Dark Iron[US]
 ## SavedVariables: LH_CooldownPulse_Saved
 ## SavedVariablesPerCharacter: LH_CooldownPulse_SavedPerCharacter

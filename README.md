@@ -1,6 +1,6 @@
 # LH_CooldownPulse
 
-Version: 1.60.1-forever.3. WoW Forever Beta (Interface 16001).
+Version: 1.60.1-forever.4. WoW Forever Beta (Interface 16001).
 
 Flashes an ability's icon when its cooldown ends. Supports player spells, pet abilities and usable items in bags or equipment.
 
@@ -10,15 +10,15 @@ Open WoW Settings > AddOns > LH Tweaks > LH CooldownPulse, or use `/lh_cooldownp
 
 Select **Test** to preview the animation. Enable **Unlock icon position**, left-drag the preview icon, then disable the checkbox to lock it. Unlocking lasts for the current session. Test also locks the icon. **Reset position** centers the icon while retaining the other settings.
 
-Options include the original seven sliders for icon size, fade timing, opacity, hold time, animation scaling and advance notification time; a native pet color swatch; spell names; and per-character spell/item filters. White disables the pet tint. In **Names or IDs**, separate localized spell/item names or numeric IDs with commas. Enter or leaving the field saves the text; Escape cancels editing. With **Use an allowlist** disabled, listed entries are excluded. With it enabled, only listed entries notify; an empty allowlist suppresses all notifications.
+Options include the original seven sliders for icon size, fade timing, opacity, hold time, animation scaling and advance notification time; a native pet color swatch; spell names; a **Track pet abilities** checkbox; and per-character spell/item filters. Pet tracking defaults to enabled and is saved account-wide. Disabling it removes pending and active pet notifications without affecting player spells or items. White disables the pet tint. In **Names or IDs**, separate localized spell/item names or numeric IDs with commas. Enter or leaving the field saves the text; Escape cancels editing. With **Use an allowlist** disabled, listed entries are excluded. With it enabled, only listed entries notify; an empty allowlist suppresses all notifications.
 
 Blizzard's **Defaults** for this category restores all animation settings, the white pet tint, hidden spell names, centered position and empty exclusion list, then locks the icon. Other LH categories are unaffected. The game-wide defaults action also resets this addon.
 
-Animation settings and icon position are saved account-wide in `LH_CooldownPulse_Saved`. Spell filters are saved per character in `LH_CooldownPulse_SavedPerCharacter`.
+Animation settings, pet tracking and icon position are saved account-wide in `LH_CooldownPulse_Saved`. Spell filters are saved per character in `LH_CooldownPulse_SavedPerCharacter`.
 
 ## Installation and upgrade
 
-Place the complete `LH_CooldownPulse` folder in your game's `Interface/AddOns` folder, including its Lua/TOC files, Settings.lua, Settings.xml and Media directory. Install and enable LH_Tweaks as well. Fully restart WoW and enable **LH CooldownPulse**, grouped under **LH Tweaks** in the AddOn list. Version 1.60.1-forever.3 needs a full restart because its TOC loads new files.
+Place the complete `LH_CooldownPulse` folder in your game's `Interface/AddOns` folder, including its Lua/TOC files, Settings.lua, Settings.xml and Media directory. Install and enable LH_Tweaks as well. Fully restart WoW and enable **LH CooldownPulse**, grouped under **LH Tweaks** in the AddOn list. Version 1.60.1-forever.3 needed a full restart because its TOC loaded new files.
 
 Media/Icon.png and Media/Icon.tga are exact copies of LH_Tweaks' shared gold LH artwork, using Spoken's chamfered gold frame as the reference. There is no runtime Spoken dependency.
 
@@ -43,7 +43,7 @@ Active item and pet cooldowns are discovered at loading. Player spells are track
 
 ## Verification
 
-The `.settings-test.py` Lua 5.1 simulation checks the real host's module registration, all 12 native settings proxies, the first-row fork notice, saved settings, inline filter editing/cancellation/pooling, color conversion, preview/drag/position reset, category-scoped/global defaults, and real player/pet/item notification paths and restricted cooldown suppression. It also checks XML parsing and identical icon files. Run `python .settings-test.py` from this folder with Lupa installed in `.test-runtime`.
+The `.settings-test.py` Lua 5.1 simulation checks the real host's module registration, all 13 native settings proxies, the first-row fork notice, saved settings, inline filter editing/cancellation/pooling, color conversion, preview/drag/position reset, category-scoped/global defaults, pet tracking toggles and real player/pet/item notification paths and restricted cooldown suppression. It also checks XML parsing and identical icon files. Run `python .settings-test.py` from this folder with Lupa installed in `.test-runtime`.
 
 Native rendering remains pending in game: fully restart WoW, open `/lh_cooldownpulse`, inspect the fork notice, exercise every control, test filters and defaults, and check player spells, pet abilities and usable items. The previous version's documentation additionally recorded simulated global-cooldown suppression and disabled-cooldown checks; these are historical checks.
 
@@ -52,6 +52,11 @@ Native rendering remains pending in game: fully restart WoW, open `/lh_cooldownp
 Fork of Doom_CooldownPulse by **discoteq**, adapted for the LH Tweaks suite and WoW Forever Beta. The inherited original-author credit **Woffle of Dark Iron[US]** remains in the TOC.
 
 ## Changelog
+
+### 1.60.1-forever.4 - 2026-10-21
+
+- Added an account-wide **Track pet abilities** option, enabled by default. Turning it off clears pending and active pet notifications.
+- Extended the Lua 5.1 simulation to cover pet tracking disabled before cooldown completion and during a pulse.
 
 ### 1.60.1-forever.3 - 2026-10-21
 
