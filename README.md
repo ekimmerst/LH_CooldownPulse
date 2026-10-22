@@ -1,5 +1,7 @@
 <h1 style="color: #d9a94b;">LH CooldownPulse</h1>
 
+<p>Flash an ability or item icon near the center of the screen when its cooldown finishes, with customizable animation and filters.</p>
+
 <p>Sometimes you only need a quick glance to know an ability is ready again. LH CooldownPulse flashes its icon near the middle of the screen when a cooldown finishes, then gets out of the way.</p>
 
 <h2 style="color: #73c9c4;">What you can change</h2>
