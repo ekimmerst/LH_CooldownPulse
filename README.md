@@ -45,5 +45,13 @@
 
 <p>Thanks to Woffle of Dark Iron [US] and discoteq for <a href="https://www.curseforge.com/wow/addons/doomcooldownpulse">Doom_CooldownPulse</a>, the original work behind this fork.</p>
 
+<h2 style="color: #73c9c4;">Changelog</h2>
+
+<p><strong>1.60.1-forever.4 - Forever</strong></p>
+
+<ul>
+  <li>No gameplay changes in this Forever branch; the existing spell, item and pet cooldown flashes remain available.</li>
+</ul>
+
 <hr>
-<p><sup>*</sup> This version was implemented with the help of Codex and GPT-6-SOL and tested by me as thoroughly as I could in the WoW beta client. Some class or race combinations may still need work; please report anything you notice.</p>
+<p><sup>*</sup> This version was implemented with the help of Codex and GPT-6-SOL. Some class or race combinations may still need work; please report anything you notice.</p>
