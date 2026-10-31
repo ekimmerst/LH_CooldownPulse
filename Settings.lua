@@ -70,6 +70,16 @@ end
 local function Build(category, layout)
     Addon.category = category
     LH_CooldownPulseFilterControlMixin = CreateFromMixins(SettingsControlMixin, FilterControl)
+    Header(layout, "Positioning")
+    local locked = Proxy(category, "locked", "boolean", "Lock pulse icon", true,
+        function() return not Addon:IsMouseEnabled() end,
+        function(value) Addon:SetUnlocked(not value) end)
+    Settings.CreateCheckbox(category, locked, "Disable to show a stationary preview icon and drag it to move the pulse. Enable to lock. Position is saved account-wide; unlocking lasts for this session.")
+    Button(layout, "Preview the current animation", "Test", function() Addon:Test() end,
+        "Lock the icon and play one test pulse using your current settings.")
+    Button(layout, "Restore the centered icon position", "Reset position", function() Addon:ResetPosition() end,
+        "Center the icon without changing animation settings or filters.")
+
     Header(layout, "Fork of Doom_CooldownPulse by discoteq.")
     Header(layout, "Animation (account-wide)")
     for _, option in ipairs(Addon.options) do
@@ -93,16 +103,6 @@ local function Build(category, layout)
             Addon:SetOption("petOverlay", {picked:GetRGB()})
         end)
     Settings.CreateColorSwatch(category, color, "Tint pet cooldown icons. White disables the tint. Saved account-wide.")
-
-    Header(layout, "Position and preview")
-    local unlocked = Proxy(category, "unlocked", "boolean", "Unlock icon position", false,
-        function() return Addon:IsMouseEnabled() end,
-        function(value) Addon:SetUnlocked(value) end)
-    Settings.CreateCheckbox(category, unlocked, "Show a stationary preview icon. Left-drag it to move the pulse. Disable to lock. Position is saved account-wide; unlocking lasts for this session.")
-    Button(layout, "Preview the current animation", "Test", function() Addon:Test() end,
-        "Lock the icon and play one test pulse using your current settings.")
-    Button(layout, "Restore the centered icon position", "Reset position", function() Addon:ResetPosition() end,
-        "Center the icon without changing animation settings or filters.")
 
     Header(layout, "Spell and item filters (per character)")
     local invert = Proxy(category, "invertIgnored", "boolean", "Use an allowlist", false)

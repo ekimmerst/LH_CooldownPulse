@@ -1,4 +1,4 @@
-## Interface: 16001
+## Interface: 16001, 120105
 ## Dependencies: LH_Tweaks
 ## Title: LH CooldownPulse
 ## Group: LH_Tweaks

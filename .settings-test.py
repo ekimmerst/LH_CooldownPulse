@@ -129,13 +129,14 @@ LH_Tweaks.category={title='LH Tweaks'}
 LH_Tweaks:RegisterModulePage('LH_CooldownPulse')
 local c=a.category
 assert(c.parent==LH_Tweaks.category and c.title=='LH CooldownPulse')
-assert(c.layout.rows[1].header=='Fork of Doom_CooldownPulse by discoteq.')
+assert(c.layout.rows[1].header=='Positioning')
 assert(a:GetOption('iconSize')==95 and a:GetOption('showSpellName') and a:GetOption('trackPetAbilities'))
 assert(registry.LH_CooldownPulse_petOverlay.get()=='ff336699')
 local count=0;for _ in pairs(registry) do count=count+1 end;assert(count==13)
 assert(registry.LH_CooldownPulse_trackPetAbilities.get()==true)
 SlashCmdList.LH_COOLDOWNPULSE();assert(opened==c:GetID())
-registry.LH_CooldownPulse_unlocked.set(true);assert(a:IsMouseEnabled() and a.width==95 and a.alpha==1)
+assert(registry.LH_CooldownPulse_locked.default and registry.LH_CooldownPulse_locked.get())
+registry.LH_CooldownPulse_locked.set(false);assert(a:IsMouseEnabled() and a.width==95 and a.alpha==1)
 a:PLAYER_ENTERING_WORLD();assert(a:IsMouseEnabled() and a.alpha==1 and a.textureRegion.texture)
 registry.LH_CooldownPulse_iconSize.set(120);assert(a.width==120)
 a.scripts.OnDragStop(a);local x,y=LH_CooldownPulse_Saved.x,LH_CooldownPulse_Saved.y
@@ -167,7 +168,7 @@ assert(box:GetText()=='' and registry.LH_CooldownPulse_petOverlay.get()=='ffffff
 LH_CooldownPulse_Saved.petOverlay[1]=0;a:RestoreDefaults();assert(LH_CooldownPulse_Saved.petOverlay[1]==1)
 a:SetOption('fadeInTime',.3);a:SetOption('holdTime',.2);a:SetOption('fadeOutTime',.7)
 a:SetOption('showSpellName',true);buttons.Test()
-assert(not a:IsMouseEnabled() and notices.LH_CooldownPulse_unlocked>0)
+assert(not a:IsMouseEnabled() and notices.LH_CooldownPulse_locked>0)
 a.scripts.OnUpdate(a,.1);assert(a.textureRegion.texture and a.TextFrame.text=='Spell Name' and a.alpha>0)
 a.scripts.OnUpdate(a,2);assert(not a.textureRegion.texture)
 -- Reuse the actual tracker: matching filters, completion and restricted cooldown suppression.
