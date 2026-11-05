@@ -68,6 +68,7 @@ function FilterControl:Release()
 end
 
 local function Build(category, layout)
+    LH_LayoutProfiles:AddSetting(category, layout, addonName)
     Addon.category = category
     LH_CooldownPulseFilterControlMixin = CreateFromMixins(SettingsControlMixin, FilterControl)
     Header(layout, "Positioning")

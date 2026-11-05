@@ -16,6 +16,10 @@
 
 <p>Open <strong>Options → AddOns → LH Tweaks → LH CooldownPulse</strong> or type <code>/lh_cooldownpulse</code>. Unlock the preview to drag the pulse into place, use <strong>Test</strong> to see the current animation and enter spell or item names or IDs in the filter field.</p>
 
+<h2 style="color: #c78be6;">Settings profiles</h2>
+
+<p>Choose a character under <strong>Use settings from</strong> to use its pulse position, size, animation, pet tint and general notification options. LH Tweaks can apply its selected source to all LH addons. Spell and item filters, including allowlist mode, remain per character. Without a source, the existing account-wide animation settings continue to apply.</p>
+
 <h2 style="color: #73c9c4;">More LH addons</h2>
 
 <p>Choose only the pieces you want. Most companion addons require LH Tweaks; LH NameplateQuestInfo also works without it.</p>
@@ -46,6 +50,12 @@
 <p>Thanks to Woffle of Dark Iron [US] and discoteq for <a href="https://www.curseforge.com/wow/addons/doomcooldownpulse">Doom_CooldownPulse</a>, the original work behind this fork.</p>
 
 <h2 style="color: #73c9c4;">Changelog</h2>
+
+<p><strong>1.60.1-forever.5 - Forever and Retail</strong></p>
+
+<ul>
+  <li>Added an optional character source for pulse position, animation and general notification settings. Per-character filters remain separate.</li>
+</ul>
 
 <p><strong>1.60.1-forever.4 - Forever</strong></p>
 

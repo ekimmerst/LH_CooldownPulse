@@ -303,6 +303,11 @@ end
 function DCP:ADDON_LOADED(addon)
     if addon ~= addonName then return end
     InitializeSavedVariables()
+    local profileKeys = {}
+    for key in pairs(defaultSettings) do profileKeys[#profileKeys + 1] = key end
+    -- Per-character spell and item filters are deliberately not included.
+    LH_LayoutProfiles:Register(addonName, LH_CooldownPulse_Saved,
+        LH_CooldownPulse_SavedPerCharacter, profileKeys)
     RefreshLocals()
     self:SetPoint("CENTER",UIParent,"BOTTOMLEFT",LH_CooldownPulse_Saved.x,LH_CooldownPulse_Saved.y)
     self:UnregisterEvent("ADDON_LOADED")
