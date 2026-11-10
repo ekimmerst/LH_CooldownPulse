@@ -76,14 +76,25 @@ local function ReadCooldown(entry)
         if IsSecret(info) or type(info) ~= "table" or
             (issecrettable and issecrettable(info)) then return end
         start, duration, enabled, rate, onGCD = info.startTime, info.duration, info.isEnabled, info.modRate, info.isOnGCD
+        if IsSecret(info.isActive) or IsSecret(enabled) or enabled == false then return end
         local charges = C_Spell.GetSpellCharges and C_Spell.GetSpellCharges(entry.id)
         if not IsSecret(charges) and type(charges) == "table" and
             not (issecrettable and issecrettable(charges)) then
-            if not PlainNumber(charges.currentCharges) or not PlainNumber(charges.maxCharges) then return end
-            if charges.currentCharges < charges.maxCharges then
+            if IsSecret(charges.isActive) then return end
+            if PlainNumber(charges.currentCharges) and PlainNumber(charges.maxCharges) and
+                charges.currentCharges < charges.maxCharges then
                 start, duration, rate = charges.cooldownStartTime, charges.cooldownDuration, charges.chargeModRate
                 onGCD = false
+            elseif charges.isActive then
+                -- Charge counts and recharge times can be secret in combat.
+                return true
             end
+        end
+        if info.isActive == false then return false end
+        if info.isActive == true and (not PlainNumber(start) or
+            not PlainNumber(duration) or IsSecret(rate)) then
+            -- The active state is readable even when the timer is secret.
+            return true
         end
     elseif entry.kind == "pet" then
         start, duration, enabled = GetPetActionCooldown(entry.id)
@@ -239,6 +250,9 @@ local function OnUpdate(_,update)
                     -- A restricted or temporarily unavailable cooldown is retried.
                     -- Do not infer readiness from the last readable timestamp.
                     entry.restricted = true
+                elseif expires == true then
+                    entry.active = true
+                    entry.restricted = false
                 elseif expires == false or expires <= now then
                     if entry.active and not notified[key] and not entry.restricted and
                         not IsAnimatingCooldownByName(entry.name) then
@@ -323,7 +337,8 @@ local function Watch(kind, id, name, texture, filterID)
     local key = kind .. ":" .. id
     if not watching[key] then
         watching[key] = {kind = kind, id = id, name = name, texture = texture,
-            checkAt = GetTime() + 0.5}
+            -- Wait past the global cooldown before accepting secret spell state.
+            checkAt = GetTime() + (kind == "spell" and 2 or 0.5)}
     end
     if not DCP:IsMouseEnabled() then DCP:SetScript("OnUpdate", OnUpdate) end
 end

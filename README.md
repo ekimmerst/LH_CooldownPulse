@@ -4,6 +4,8 @@
 
 <p>Sometimes you only need a quick glance to know an ability is ready again. LH CooldownPulse flashes its icon near the middle of the screen when a cooldown finishes, then gets out of the way.</p>
 
+<p>Spell cooldowns also pulse during combat. When the game restricts access to exact cooldown times, the pulse appears when the spell becomes ready; advance notification requires readable cooldown times.</p>
+
 <h2 style="color: #73c9c4;">What you can change</h2>
 
 <ul>
@@ -50,6 +52,13 @@
 <p>Thanks to Woffle of Dark Iron [US] and discoteq for <a href="https://www.curseforge.com/wow/addons/doomcooldownpulse">Doom_CooldownPulse</a>, the original work behind this fork.</p>
 
 <h2 style="color: #73c9c4;">Changelog</h2>
+
+<p><strong>1.60.1-forever.6 - Forever and Retail</strong></p>
+
+<ul>
+  <li>Fixed spell cooldown pulses appearing only after combat ended when cooldown times were restricted.</li>
+  <li>Kept global cooldowns out of combat pulses.</li>
+</ul>
 
 <p><strong>1.60.1-forever.5 - Forever and Retail</strong></p>
 
