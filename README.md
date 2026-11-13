@@ -53,6 +53,12 @@
 
 <h2 style="color: #73c9c4;">Changelog</h2>
 
+<p><strong>1.60.1-forever.8 - Forever and Retail</strong></p>
+
+<ul>
+  <li>Recognizes cooldowns on learned spellbook ranks and form abilities such as Faerie Fire (Feral) without pulsing unrelated abilities after the global cooldown.</li>
+</ul>
+
 <p><strong>1.60.1-forever.7 - Forever and Retail</strong></p>
 
 <ul>

@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.60.1-forever.8 - Forever and Retail
+
+- Match casts to learned spellbook ranks with the same localized name, including druid form abilities whose cooldown ID differs from the cast ID. Unrelated abilities no longer pulse after Faerie Fire triggers the global cooldown.
+- Refresh the learned-spell list when the spellbook or specialization changes.
+
 ## 1.60.1-forever.7 - Forever and Retail
 
 - Prevented spells without their own cooldown, such as Fireball, from pulsing after the global cooldown when combat hides timer values.

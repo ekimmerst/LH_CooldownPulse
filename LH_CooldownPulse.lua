@@ -2,6 +2,7 @@ local addonName = ...
 local fadeInTime, fadeOutTime, maxAlpha, animScale, iconSize, holdTime, showSpellName, trackPetAbilities, ignoredSpells, invertIgnored, remainingCooldownWhenNotified
 local cooldowns, animating, watching, notified = { }, { }, { }, { }
 local itemSpells = {}
+local knownSpells = {}
 local GetTime = GetTime
 local runtimer = 0
 
@@ -349,6 +350,68 @@ local function Watch(kind, id, name, texture, filterID)
     if not DCP:IsMouseEnabled() then DCP:SetScript("OnUpdate", OnUpdate) end
 end
 
+local function AddKnownSpell(id)
+    if not PlainNumber(id) or id <= 0 then return end
+    local name = C_Spell.GetSpellName(id)
+    if name and not IsSecret(name) then knownSpells[id] = name end
+end
+
+local function AddKnownFlyout(id)
+    if not PlainNumber(id) or not GetFlyoutInfo or not GetFlyoutSlotInfo then return end
+    local _, _, count, known = GetFlyoutInfo(id)
+    if not known or not PlainNumber(count) then return end
+    for slot = 1, count do
+        local spellID, overrideID, learned = GetFlyoutSlotInfo(id, slot)
+        if learned then
+            AddKnownSpell(spellID)
+            AddKnownSpell(overrideID)
+        end
+    end
+end
+
+local function RefreshKnownSpells()
+    wipe(knownSpells)
+    if C_SpellBook and C_SpellBook.GetNumSpellBookSkillLines and
+        C_SpellBook.GetSpellBookSkillLineInfo and C_SpellBook.GetSpellBookItemInfo and
+        Enum and Enum.SpellBookSpellBank then
+        local bank = Enum.SpellBookSpellBank.Player
+        local types = Enum.SpellBookItemType
+        for line = 1, C_SpellBook.GetNumSpellBookSkillLines() do
+            local info = C_SpellBook.GetSpellBookSkillLineInfo(line)
+            if info then
+                for slot = info.itemIndexOffset + 1, info.itemIndexOffset + info.numSpellBookItems do
+                    local item = C_SpellBook.GetSpellBookItemInfo(slot, bank)
+                    if item and not item.isOffSpec and not item.isPassive then
+                        if types and item.itemType == types.Flyout then
+                            AddKnownFlyout(item.actionID)
+                        elseif not types or not item.itemType or item.itemType == types.Spell then
+                            AddKnownSpell(item.spellID)
+                        end
+                    end
+                end
+            end
+        end
+    elseif GetNumSpellTabs and GetSpellTabInfo and GetSpellBookItemInfo then
+        for tab = 1, GetNumSpellTabs() do
+            local _, _, offset, count = GetSpellTabInfo(tab)
+            for slot = offset + 1, offset + count do
+                local kind, id = GetSpellBookItemInfo(slot, BOOKTYPE_SPELL or "spell")
+                if kind == "SPELL" then AddKnownSpell(id)
+                elseif kind == "FLYOUT" then AddKnownFlyout(id) end
+            end
+        end
+    end
+end
+
+local function WatchKnownSpellRanks(castID, castName)
+    if not castName or IsSecret(castName) then return end
+    for id, name in pairs(knownSpells) do
+        if id ~= castID and name == castName then
+            Watch("spell", id, name, C_Spell.GetSpellTexture(id))
+        end
+    end
+end
+
 local function ScanItems()
     local function AddItem(id)
         if id then
@@ -387,15 +450,18 @@ function DCP:UNIT_SPELLCAST_SUCCEEDED(unit, castGUID, spellID)
     if unit == "player" and spellID then
         ScanItems()
         if not itemSpells[spellID] then
-            Watch("spell", spellID, C_Spell.GetSpellName(spellID), C_Spell.GetSpellTexture(spellID))
+            local name = C_Spell.GetSpellName(spellID)
+            Watch("spell", spellID, name, C_Spell.GetSpellTexture(spellID))
+            -- The cast can use a different rank than the cooldown shown in the spellbook.
+            WatchKnownSpellRanks(spellID, name)
         end
     elseif unit == "pet" then
         ScanPet()
     end
 end
 
-function DCP:SPELL_UPDATE_COOLDOWN()
-    -- Entries are read afresh on every update, including cooldown resets/reductions.
+function DCP:SPELLS_CHANGED()
+    RefreshKnownSpells()
 end
 DCP.BAG_UPDATE_COOLDOWN = ScanItems
 DCP.BAG_UPDATE_DELAYED = ScanItems
@@ -414,16 +480,20 @@ function DCP:PLAYER_ENTERING_WORLD()
     DCPT:SetVertexColor(1, 1, 1)
     self.TextFrame:SetText(nil)
     self:SetAlpha(0)
+    RefreshKnownSpells()
     ScanItems()
     ScanPet()
     if self:IsMouseEnabled() then self:SetUnlocked(true) end
 end
 
 function DCP:PLAYER_SPECIALIZATION_CHANGED(unit)
-    if not IsSecret(unit) and unit == "player" then wipe(watching) end
+    if not IsSecret(unit) and unit == "player" then
+        wipe(watching)
+        RefreshKnownSpells()
+    end
 end
 
-for _, event in ipairs({"UNIT_SPELLCAST_SUCCEEDED", "SPELL_UPDATE_COOLDOWN",
+for _, event in ipairs({"UNIT_SPELLCAST_SUCCEEDED", "SPELLS_CHANGED",
     "BAG_UPDATE_COOLDOWN", "BAG_UPDATE_DELAYED", "PLAYER_EQUIPMENT_CHANGED",
     "GET_ITEM_INFO_RECEIVED", "PET_BAR_UPDATE_COOLDOWN", "PET_BAR_UPDATE",
     "PLAYER_ENTERING_WORLD", "PLAYER_SPECIALIZATION_CHANGED"}) do
