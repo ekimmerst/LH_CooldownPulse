@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.60.1-forever.7 - Forever and Retail
+
+- Prevented spells without their own cooldown, such as Fireball, from pulsing after the global cooldown when combat hides timer values.
+
 ## 1.60.1-forever.6 - Forever and Retail
 
 - Fixed spell cooldown pulses appearing only after combat ended when cooldown times were restricted.

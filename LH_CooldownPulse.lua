@@ -70,7 +70,7 @@ local function PlainNumber(value)
 end
 
 local function ReadCooldown(entry)
-    local start, duration, enabled, rate, onGCD
+    local start, duration, enabled, rate, onGCD, recharging
     if entry.kind == "spell" then
         local info = C_Spell.GetSpellCooldown(entry.id)
         if IsSecret(info) or type(info) ~= "table" or
@@ -83,6 +83,7 @@ local function ReadCooldown(entry)
             if IsSecret(charges.isActive) then return end
             if PlainNumber(charges.currentCharges) and PlainNumber(charges.maxCharges) and
                 charges.currentCharges < charges.maxCharges then
+                recharging = true
                 start, duration, rate = charges.cooldownStartTime, charges.cooldownDuration, charges.chargeModRate
                 onGCD = false
             elseif charges.isActive then
@@ -93,7 +94,12 @@ local function ReadCooldown(entry)
         if info.isActive == false then return false end
         if info.isActive == true and (not PlainNumber(start) or
             not PlainNumber(duration) or IsSecret(rate)) then
-            -- The active state is readable even when the timer is secret.
+            -- isActive also covers the global cooldown. With a secret timer,
+            -- only track spells whose base cooldown can outlast the GCD.
+            if not recharging and GetSpellBaseCooldown then
+                local ok, baseMs = pcall(GetSpellBaseCooldown, entry.id)
+                if ok and PlainNumber(baseMs) and baseMs <= 2000 then return false end
+            end
             return true
         end
     elseif entry.kind == "pet" then

@@ -53,6 +53,12 @@
 
 <h2 style="color: #73c9c4;">Changelog</h2>
 
+<p><strong>1.60.1-forever.7 - Forever and Retail</strong></p>
+
+<ul>
+  <li>Prevented spells without their own cooldown, such as Fireball, from pulsing after the global cooldown when combat hides timer values.</li>
+</ul>
+
 <p><strong>1.60.1-forever.6 - Forever and Retail</strong></p>
 
 <ul>
